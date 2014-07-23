@@ -62,6 +62,12 @@ Exceptions
 .. autoexception:: requests.exceptions.TooManyRedirects
 .. autoexception:: requests.exceptions.Timeout
 
+Retries
+~~~~~~~
+
+.. autoclass:: requests.structures.Retry
+    :inherited-members:
+
 
 Status Code Lookup
 ~~~~~~~~~~~~~~~~~~

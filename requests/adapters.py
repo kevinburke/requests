@@ -309,7 +309,8 @@ class HTTPAdapter(BaseAdapter):
 
         return headers
 
-    def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
+    def send(self, request, stream=False, timeout=None, verify=True, cert=None,
+             proxies=None, retries=None):
         """Sends PreparedRequest object. Returns Response object.
 
         :param request: The :class:`PreparedRequest <PreparedRequest>` being sent.
@@ -318,6 +319,8 @@ class HTTPAdapter(BaseAdapter):
         :param verify: (optional) Whether to verify SSL certificates.
         :param cert: (optional) Any user-provided SSL certificate to be trusted.
         :param proxies: (optional) The proxies dictionary to apply to the request.
+        :param retries: (optional) A :class:`~requests.structures.Retry` object
+            specifying how/when to retry request failures.
         """
 
         conn = self.get_connection(request.url, proxies)
@@ -341,7 +344,7 @@ class HTTPAdapter(BaseAdapter):
                     assert_same_host=False,
                     preload_content=False,
                     decode_content=False,
-                    retries=Retry(self.max_retries, read=False),
+                    retries=retries,
                     timeout=timeout
                 )
 

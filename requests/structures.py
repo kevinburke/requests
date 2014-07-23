@@ -10,6 +10,9 @@ Data structures that power Requests.
 
 import collections
 
+# Allow users to specify the Retry class from requests.
+from .packages.urllib3 import Retry
+
 
 class CaseInsensitiveDict(collections.MutableMapping):
     """

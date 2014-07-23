@@ -18,6 +18,7 @@ from .cookies import (
     cookiejar_from_dict, extract_cookies_to_jar, RequestsCookieJar, merge_cookies)
 from .models import Request, PreparedRequest, DEFAULT_REDIRECT_LIMIT
 from .hooks import default_hooks, dispatch_hook
+from .packages.urllib3 import Retry
 from .utils import to_key_val_list, default_headers, to_native_string
 from .exceptions import (
     TooManyRedirects, InvalidSchema, ChunkedEncodingError, ContentDecodingError)
@@ -295,6 +296,9 @@ class Session(SessionRedirectMixin):
         #: Stream response content default.
         self.stream = False
 
+        # Retries default.
+        self.retries = Retry(self.max_retries, read=False)
+
         #: SSL Verification default.
         self.verify = True
 
@@ -379,7 +383,9 @@ class Session(SessionRedirectMixin):
         hooks=None,
         stream=None,
         verify=None,
-        cert=None):
+        cert=None,
+        retries=None,
+       ):
         """Constructs a :class:`Request <Request>`, prepares it and sends it.
         Returns :class:`Response <Response>` object.
 
@@ -408,6 +414,9 @@ class Session(SessionRedirectMixin):
             A CA_BUNDLE path can also be provided.
         :param cert: (optional) if String, path to ssl client cert file (.pem).
             If Tuple, ('cert', 'key') pair.
+        :param retries: (optional) A :class:`~requests.structures.Retry` object
+            specifying how/when to retry request failures.
+
         """
 
         method = builtin_str(method)
@@ -457,6 +466,7 @@ class Session(SessionRedirectMixin):
             'cert': cert,
             'proxies': proxies,
             'allow_redirects': allow_redirects,
+            'retries': retries,
         }
         resp = self.send(prep, **send_kwargs)
 
@@ -539,6 +549,7 @@ class Session(SessionRedirectMixin):
         kwargs.setdefault('verify', self.verify)
         kwargs.setdefault('cert', self.cert)
         kwargs.setdefault('proxies', self.proxies)
+        kwargs.setdefault('retries', self.retries)
 
         # It's possible that users might accidentally send a Request object.
         # Guard against that specific failure case.
