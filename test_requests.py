@@ -18,10 +18,11 @@ from requests.auth import HTTPDigestAuth, _basic_auth_str
 from requests.compat import (
     Morsel, cookielib, getproxies, str, urljoin, urlparse, is_py3, builtin_str)
 from requests.cookies import cookiejar_from_dict, morsel_to_cookie
-from requests.exceptions import (ConnectionError, ConnectTimeout,
-                                 InvalidSchema, InvalidURL, MissingSchema,
-                                 ReadTimeout, Timeout)
+from requests.exceptions import (ConnectionError, ConnectTimeout, InvalidURL,
+                                 MissingSchema, ReadTimeout, ResponseError,
+                                 Timeout,)
 from requests.models import PreparedRequest
+from requests.packages.urllib3.util.retry import Retry
 from requests.structures import CaseInsensitiveDict
 from requests.sessions import SessionRedirectMixin
 from requests.models import urlencode
@@ -1439,6 +1440,24 @@ class TestRedirects:
                                  TestRedirects.default_keyword_args)
             assert session.calls[-1] == send_call
 
+class TestRetries(unittest.TestCase):
+
+    def test_request_is_retried(self):
+        """A custom Retry object should raise a ResponseError"""
+        r = Retry(total=2, read=2, status_forcelist=[418])
+        try:
+            s = requests.Session()
+            s.mount('https://', HTTPAdapter(max_retries=r))
+            s.get("https://httpbin.org/status/418")
+            raise AssertionError("previous request should throw an exception")
+        except ResponseError as e:
+            assert '418' in str(e)
+
+    def test_retry_success(self):
+        r = Retry(total=2, read=2, status_forcelist=[418])
+        s = requests.Session()
+        s.mount('https://', HTTPAdapter(max_retries=r))
+        s.get("https://httpbin.org/status/500")
 
 
 @pytest.fixture

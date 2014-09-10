@@ -25,15 +25,16 @@ from .packages.urllib3.exceptions import MaxRetryError
 from .packages.urllib3.exceptions import ProxyError as _ProxyError
 from .packages.urllib3.exceptions import ProtocolError
 from .packages.urllib3.exceptions import ReadTimeoutError
+from .packages.urllib3.exceptions import ResponseError as _ResponseError
 from .packages.urllib3.exceptions import SSLError as _SSLError
 from .cookies import extract_cookies_to_jar
 from .exceptions import (ConnectionError, ConnectTimeout, ReadTimeout, SSLError,
-                         ProxyError)
+                         ProxyError, TooManyRedirects, ResponseError,)
 from .auth import _basic_auth_str
 
 DEFAULT_POOLBLOCK = False
 DEFAULT_POOLSIZE = 10
-DEFAULT_RETRIES = 0
+DEFAULT_RETRIES = object()
 
 
 class BaseAdapter(object):
@@ -77,7 +78,10 @@ class HTTPAdapter(BaseAdapter):
     def __init__(self, pool_connections=DEFAULT_POOLSIZE,
                  pool_maxsize=DEFAULT_POOLSIZE, max_retries=DEFAULT_RETRIES,
                  pool_block=DEFAULT_POOLBLOCK):
-        self.max_retries = max_retries
+        if max_retries is DEFAULT_RETRIES:
+            self.max_retries = Retry(0, read=False)
+        else:
+            self.max_retries = Retry.from_int(max_retries)
         self.config = {}
         self.proxy_manager = {}
 
@@ -348,6 +352,7 @@ class HTTPAdapter(BaseAdapter):
             timeout = TimeoutSauce(connect=timeout, read=timeout)
 
         try:
+            # Send the request.
             if not chunked:
                 resp = conn.urlopen(
                     method=request.method,
@@ -358,11 +363,9 @@ class HTTPAdapter(BaseAdapter):
                     assert_same_host=False,
                     preload_content=False,
                     decode_content=False,
-                    retries=Retry(self.max_retries, read=False),
-                    timeout=timeout
+                    retries=self.max_retries,
+                    timeout=timeout,
                 )
-
-            # Send the request.
             else:
                 if hasattr(conn, 'proxy_pool'):
                     conn = conn.proxy_pool
@@ -409,6 +412,13 @@ class HTTPAdapter(BaseAdapter):
         except MaxRetryError as e:
             if isinstance(e.reason, ConnectTimeoutError):
                 raise ConnectTimeout(e, request=request)
+
+            if isinstance(e.reason, _ResponseError):
+                # In theory a ResponseError could represent a TooManyRedirects
+                # error, which we'd like to handle separately. However, the use
+                # of redirect=False above means that this branch of code is not
+                # hit in urllib3.
+                raise ResponseError(str(e.reason))
 
             raise ConnectionError(e, request=request)
 
