@@ -27,8 +27,8 @@ from .packages.urllib3.exceptions import ProtocolError
 from .packages.urllib3.exceptions import ReadTimeoutError
 from .packages.urllib3.exceptions import SSLError as _SSLError
 from .cookies import extract_cookies_to_jar
-from .exceptions import (ConnectionError, ConnectTimeout, ReadTimeout, SSLError,
-                         ProxyError)
+from .exceptions import (ConnectionError, ConnectTimeout, HTTPError,
+                         ReadTimeout, SSLError, ProxyError,)
 from .auth import _basic_auth_str
 
 DEFAULT_POOLBLOCK = False
@@ -410,9 +410,12 @@ class HTTPAdapter(BaseAdapter):
             raise ConnectionError(err, request=request)
 
         except MaxRetryError as e:
+            raise
             if isinstance(e.reason, ConnectTimeoutError):
                 raise ConnectTimeout(e, request=request)
 
+            if isinstance(e.reason, _HTTPError):
+                raise HTTPError(e, request=request, response=e.response)
             raise ConnectionError(e, request=request)
 
         except _ProxyError as e:

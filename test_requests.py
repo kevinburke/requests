@@ -21,6 +21,7 @@ from requests.cookies import cookiejar_from_dict, morsel_to_cookie
 from requests.exceptions import (InvalidURL, MissingSchema, ConnectTimeout,
                                  ReadTimeout, ConnectionError, Timeout)
 from requests.models import PreparedRequest
+from requests.packages.urllib3.util.retry import Retry
 from requests.structures import CaseInsensitiveDict
 from requests.sessions import SessionRedirectMixin
 from requests.models import urlencode
@@ -1425,6 +1426,19 @@ class TestRedirects:
             send_call = SendCall((response.request,),
                                  TestRedirects.default_keyword_args)
             assert session.calls[-1] == send_call
+
+
+class TestRetries(unittest.TestCase):
+
+    def test_request_is_retried(self):
+        r = Retry(total=2, read=2, status_forcelist=[418])
+        try:
+            s = requests.Session()
+            s.mount('https://', HTTPAdapter(max_retries=r))
+            s.get("https://httpbin.org/status/418")
+            raise AssertionError("previous request should throw an exception")
+        except requests.exceptions.HTTPError as e:
+            assert e.response.status_code == 418
 
 
 
