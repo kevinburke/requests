@@ -89,7 +89,3 @@ class ChunkedEncodingError(RequestException):
 
 class ContentDecodingError(RequestException, BaseHTTPError):
     """Failed to decode response content"""
-
-
-class ResponseError(RequestException):
-    """An error occurred while parsing the response from the server."""

@@ -29,7 +29,7 @@ from .packages.urllib3.exceptions import ResponseError as _ResponseError
 from .packages.urllib3.exceptions import SSLError as _SSLError
 from .cookies import extract_cookies_to_jar
 from .exceptions import (ConnectionError, ConnectTimeout, ReadTimeout, SSLError,
-                         ProxyError, TooManyRedirects, ResponseError,)
+                         ProxyError,)
 from .auth import _basic_auth_str
 
 DEFAULT_POOLBLOCK = False
@@ -418,7 +418,7 @@ class HTTPAdapter(BaseAdapter):
                 # error, which we'd like to handle separately. However, the use
                 # of redirect=False above means that this branch of code is not
                 # hit in urllib3.
-                raise ResponseError(str(e.reason))
+                raise
 
             raise ConnectionError(e, request=request)
 
