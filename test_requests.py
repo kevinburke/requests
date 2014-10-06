@@ -18,10 +18,12 @@ from requests.auth import HTTPDigestAuth, _basic_auth_str
 from requests.compat import (
     Morsel, cookielib, getproxies, str, urljoin, urlparse, is_py3, builtin_str)
 from requests.cookies import cookiejar_from_dict, morsel_to_cookie
-from requests.exceptions import (InvalidURL, MissingSchema, ConnectTimeout,
-                                 ReadTimeout, ConnectionError, Timeout)
+from requests.exceptions import (ConnectionError, ConnectTimeout, InvalidURL,
+                                 InvalidSchema, MissingSchema, ReadTimeout,
+                                 Timeout,)
 from requests.models import PreparedRequest
 from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.exceptions import MaxRetryError
 from requests.structures import CaseInsensitiveDict
 from requests.sessions import SessionRedirectMixin
 from requests.models import urlencode
@@ -1437,8 +1439,8 @@ class TestRetries(unittest.TestCase):
             s.mount('https://', HTTPAdapter(max_retries=r))
             s.get("https://httpbin.org/status/418")
             raise AssertionError("previous request should throw an exception")
-        except requests.exceptions.HTTPError as e:
-            assert e.response.status_code == 418
+        except MaxRetryError as e:
+            assert '418' in str(e.reason)
 
 
 

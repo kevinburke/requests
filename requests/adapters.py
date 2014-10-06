@@ -25,10 +25,11 @@ from .packages.urllib3.exceptions import MaxRetryError
 from .packages.urllib3.exceptions import ProxyError as _ProxyError
 from .packages.urllib3.exceptions import ProtocolError
 from .packages.urllib3.exceptions import ReadTimeoutError
+from .packages.urllib3.exceptions import ResponseError as _ResponseError
 from .packages.urllib3.exceptions import SSLError as _SSLError
 from .cookies import extract_cookies_to_jar
-from .exceptions import (ConnectionError, ConnectTimeout, HTTPError,
-                         ReadTimeout, SSLError, ProxyError,)
+from .exceptions import (ConnectionError, ConnectTimeout, ReadTimeout, SSLError,
+                         ProxyError,)
 from .auth import _basic_auth_str
 
 DEFAULT_POOLBLOCK = False
@@ -410,12 +411,16 @@ class HTTPAdapter(BaseAdapter):
             raise ConnectionError(err, request=request)
 
         except MaxRetryError as e:
-            raise
             if isinstance(e.reason, ConnectTimeoutError):
                 raise ConnectTimeout(e, request=request)
 
-            if isinstance(e.reason, _HTTPError):
-                raise HTTPError(e, request=request, response=e.response)
+            if isinstance(e.reason, _ResponseError):
+                # In theory a ResponseError could represent a TooManyRedirects
+                # error, which we'd like to handle separately. However, the use
+                # of redirect=False above means that this branch of code is not
+                # hit in urllib3.
+                raise
+
             raise ConnectionError(e, request=request)
 
         except _ProxyError as e:
