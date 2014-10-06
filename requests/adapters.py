@@ -29,7 +29,7 @@ from .packages.urllib3.exceptions import ResponseError as _ResponseError
 from .packages.urllib3.exceptions import SSLError as _SSLError
 from .cookies import extract_cookies_to_jar
 from .exceptions import (ConnectionError, ConnectTimeout, ReadTimeout, SSLError,
-                         ProxyError,)
+                         ProxyError)
 from .auth import _basic_auth_str
 
 DEFAULT_POOLBLOCK = False
